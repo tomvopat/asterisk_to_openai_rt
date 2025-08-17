@@ -788,7 +788,7 @@ function startOpenAIWebSocket(channelId) {
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (err) => {
-  logger.error(`Uncaught Exception: ${err.message}`);
+  logger.error(`Uncaught Exception: ${err}`);
   cleanup();
   process.exit(1);
 });
