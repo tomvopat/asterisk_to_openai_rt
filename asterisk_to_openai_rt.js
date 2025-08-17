@@ -9,13 +9,16 @@ const async = require('async'); // Async utilities (used for RTP queue)
 require('dotenv').config(); // Loads environment variables from .env file
 
 // Configuration constants loaded from environment variables or defaults
-const ARI_URL = 'http://127.0.0.1:8088'; // Asterisk ARI endpoint
-const ARI_USER = 'asterisk'; // ARI username
-const ARI_PASS = 'asterisk'; // ARI password
+const ARI_URL = process.env.ARI_URL // Asterisk ARI endpoint
+const ARI_USER = process.env.ARI_USER; // ARI username
+const ARI_PASS = process.env.ARI_PASS; // ARI password
 const ARI_APP = 'stasis_app'; // Stasis application name
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY; // OpenAI API key from .env
-const REALTIME_URL = 'wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17'; // OpenAI real-time WebSocket URL
+const REALTIME_MODEL = process.env.REALTIME_MODEL || 'gpt-4o-mini-realtime-preview-2024-12-17'; // OpenAI model for real-time API
+const REALTIME_URL = `wss://api.openai.com/v1/realtime?model=${REALTIME_MODEL}`; // OpenAI real-time WebSocket URL
 const RTP_PORT = 12000; // Local port for RTP audio reception
+const RTP_BIND_IP = '0.0.0.0'; // Local IP address to bind RTP socket
+const EXTERNAL_MEDIA_TARGET_IP = process.env.EXTERNAL_MEDIA_TARGET_IP || '127.0.0.1'; // IP address for ExternalMedia target
 const MAX_CALL_DURATION = process.env.MAX_CALL_DURATION ? parseInt(process.env.MAX_CALL_DURATION) : 300000; // Max call duration in ms (default: 5 min)
 const RTP_QUEUE_CONCURRENCY = parseInt(process.env.RTP_QUEUE_CONCURRENCY) || 50; // Concurrent RTP packet sends
 const LOG_RTP_EVERY_N_PACKETS = parseInt(process.env.LOG_RTP_EVERY_N_PACKETS) || 100; // Log RTP stats every N packets
@@ -176,7 +179,7 @@ function startRTPReceiver() {
     logger.error(`RTP Receiver error: ${err.message}`);
   });
 
-  rtpReceiver.bind(RTP_PORT, '127.0.0.1'); // Bind to local port
+  rtpReceiver.bind(RTP_PORT, RTP_BIND_IP); // Bind to local port
 }
 
 // Convert a single μ-law sample to 16-bit PCM
@@ -704,7 +707,7 @@ function startOpenAIWebSocket(channelId) {
         // Set up ExternalMedia channel
         const extParams = {
           app: ARI_APP,
-          external_host: `127.0.0.1:${RTP_PORT}`,
+          external_host: `${EXTERNAL_MEDIA_TARGET_IP}:${RTP_PORT}`,
           format: 'ulaw',
           transport: 'udp',
           encapsulation: 'rtp',
